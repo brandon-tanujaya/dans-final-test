@@ -1,6 +1,6 @@
 package com.hello.dansfinaltest;
 
-import com.hello.dansfinaltest.model.User;
+import com.hello.dansfinaltest.model.UserCustom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -16,8 +16,8 @@ public class UserConfig {
     CommandLineRunner initDatabase(UserRepository repository) {
 
         return args -> {
-            log.info("Preloading " + repository.save(new User("user1", "pass1")));
-            log.info("Preloading " + repository.save(new User("user2", "pass2")));
+            log.info("Preloading " + repository.save(new UserCustom("user1", "pass1")));
+            log.info("Preloading " + repository.save(new UserCustom("user2", "pass2")));
         };
     }
 

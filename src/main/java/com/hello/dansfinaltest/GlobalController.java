@@ -1,16 +1,16 @@
 package com.hello.dansfinaltest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.hello.dansfinaltest.jwt.JwtTokenUtil;
 import com.hello.dansfinaltest.jwt.JwtUserDetailsService;
-import com.hello.dansfinaltest.model.Job;
+import com.hello.dansfinaltest.jwt.model.JwtRequest;
+import com.hello.dansfinaltest.jwt.model.JwtResponse;
 import com.hello.dansfinaltest.model.PackageActivation;
-import com.hello.dansfinaltest.model.User;
+
+import com.hello.dansfinaltest.model.product.Product;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -61,21 +61,18 @@ public class GlobalController {
     }
 
     //Login API
-//    @PostMapping("/api/auth")
-//    User authenticate(@RequestBody User user){
-//        return userRepository.findUserByName(user.getName()).get(0);
-//    }
     @RequestMapping(value = "/api/auth", method = RequestMethod.POST)
-    public String createAuthenticationToken(@RequestBody User user) throws Exception {
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody JwtRequest authenticationRequest)
+            throws Exception {
 
-        authenticate(user.getName(), user.getPassword());
+        authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
 
         final UserDetails userDetails = userDetailsService
-                .loadUserByUsername(user.getName());
+                .loadUserByUsername(authenticationRequest.getUsername());
 
         final String token = jwtTokenUtil.generateToken(userDetails);
 
-        return token;
+        return ResponseEntity.ok(new JwtResponse(token));
     }
 
     private void authenticate(String username, String password) throws Exception {
@@ -90,17 +87,23 @@ public class GlobalController {
 
     //Browse Product
     @GetMapping("/api/product")
-    void getAll(RestTemplate restTemplate) throws JsonProcessingException {
+    PackageActivation getAll(RestTemplate restTemplate) throws JsonProcessingException {
         String url = "http://dev3.dansmultipro.co.id/mock/preprod-web/scrt/esb/v1/offer/reseller?menu_id=ML3_DP_03";
         ResponseEntity<String> response
                 = restTemplate.getForEntity(url, String.class);
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(response.getBody());
-        JsonNode name = root.path("name");
+        Gson gson = new Gson();
+        Product product = gson.fromJson(response.getBody(), Product.class);
 
-        System.out.println(name);
+        PackageActivation packageActivationTemp =
+                new PackageActivation(
+                        product.getOffer().get(0).getId(),
+                        product.getOffer().get(0).getPrice(),
+                        product.getOffer().get(0).getName());
+
+        return packageActivationRepository.save(packageActivationTemp);
     }
+
 //    @GetMapping("/api/product")
 //    Job[] getAll(RestTemplate restTemplate){
 //        Job[] jobList = restTemplate.getForObject("https://jobs.github.com/positions.json", Job[].class);
